@@ -16,6 +16,8 @@ export default function App() {
   useEffect(() => {
     if (query !== '') {
       setLoader(true);
+      setLoadMoreBtn(false);
+
       ImagesApiService(query, page)
         .then(data => {
           setImgs(imgs => [...imgs, ...data.hits]);
