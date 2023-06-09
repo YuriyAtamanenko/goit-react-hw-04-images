@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import Searchbar from '../Searchbar/Searchbar';
 import ImageGallery from '../ImageGallery/ImageGallery';
 import Button from '../Button/Button';
@@ -6,57 +6,44 @@ import Loader from '../Loader/Loader';
 
 import ImagesApiService from '../../services/API';
 
-export default class App extends Component {
-  state = {
-    query: '',
-    imgs: [],
-    page: null,
-    isLoadMoreBtn: false,
-    isLoader: false,
-  };
+export default function App() {
+  const [query, setQuery] = useState('');
+  const [imgs, setImgs] = useState([]);
+  const [page, setPage] = useState(null);
+  const [isLoader, setLoader] = useState(false);
+  const [isLoadMoreBtn, setLoadMoreBtn] = useState(false);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.query !== this.state.query ||
-      prevState.page !== this.state.page
-    ) {
-      this.setState({ isLoader: true });
-      ImagesApiService(this.state.query, this.state.page)
-        .then(data =>
-          this.setState(prevState => ({
-            imgs: [...prevState.imgs, ...data.hits],
-            isLoadMoreBtn: this.state.page < Math.ceil(data.totalHits / 12),
-          }))
-        )
+  useEffect(() => {
+    if (query !== '') {
+      setLoader(true);
+      ImagesApiService(query, page)
+        .then(data => {
+          setImgs(imgs => [...imgs, ...data.hits]);
+          setLoadMoreBtn(page < Math.ceil(data.totalHits / 12));
+        })
         .catch(error => console.log(error))
-        .finally(this.setState({ isLoader: false }));
+        .finally(setLoader(false));
     }
-  }
+  }, [page, query]);
 
-  handleFromSubmit = query => {
-    this.setState({
-      query,
-      imgs: [],
-      page: 1,
-      isLoader: true,
-      isLoadMoreBtn: false,
-    });
+  const handleFormSubmit = query => {
+    setQuery(query);
+    setImgs([]);
+    setPage(1);
+    setLoader(true);
+    setLoadMoreBtn(false);
   };
 
-  handleLoadMore = () => {
-    this.setState(({ page }) => ({
-      page: page + 1,
-    }));
+  const handleLoadMore = () => {
+    setPage(page => page + 1);
   };
 
-  render() {
-    return (
-      <div>
-        <Searchbar onSubmit={this.handleFromSubmit} />
-        {this.state.query && <ImageGallery imgs={this.state.imgs} />}
-        {this.state.isLoadMoreBtn && <Button onClick={this.handleLoadMore} />}
-        {this.state.isLoader && <Loader />}
-      </div>
-    );
-  }
+  return (
+    <div>
+      <Searchbar onSubmit={handleFormSubmit} />
+      {query && <ImageGallery imgs={imgs} />}
+      {isLoadMoreBtn && <Button onClick={handleLoadMore} />}
+      {isLoader && <Loader />}
+    </div>
+  );
 }
